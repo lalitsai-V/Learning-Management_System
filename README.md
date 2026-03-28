@@ -1,4 +1,4 @@
-# EDUVORA
+# Turborepo starter
 
 This Turborepo starter is maintained by the Turborepo core team.
 
@@ -63,83 +63,85 @@ turbo build --filter=docs
 Without global `turbo`:
 
 ```sh
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+git clone <your-repo-url>
+cd mini_udemy
+pnpm install
 ```
 
-### Develop
+### 2. Configure Environment Variables
 
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+Create a `.env` file inside `apps/web/`:
 
 ```sh
-cd my-turborepo
-turbo dev
+cp apps/web/.env.example apps/web/.env
 ```
 
-Without global `turbo`, use your package manager:
+Fill in your Supabase credentials:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
+```
+
+### 3. Set Up the Database
+
+1. Open your [Supabase Dashboard](https://supabase.com) → **SQL Editor**.
+2. Run the contents of [`supabase-schema.sql`](./supabase-schema.sql) first.
+3. Then run [`supabase-assessment.sql`](./supabase-assessment.sql) to enable the quiz system.
+
+### 4. Run the Development Server
 
 ```sh
-cd my-turborepo
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+pnpm run dev
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+---
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## 🗄️ Database Schema Overview
 
-```sh
-turbo dev --filter=web
-```
+### Core Tables
 
-Without global `turbo`:
+| Table | Description |
+|---|---|
+| `profiles` | User profiles (linked to `auth.users`) with `role` (student/instructor) |
+| `courses` | Main course metadata, thumbnails, and publishing status |
+| `modules` | Logical sections within a course |
+| `lessons` | Content (video, article, assessment) within modules |
+| `enrollments` | Student-Course relationship and overall progress tracking |
+| `lesson_progress`| Granular completion tracking for individual lessons |
 
-```sh
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+### Interaction & Assessment Tables
 
-### Remote Caching
+| Table | Description |
+|---|---|
+| `wishlist` | Stores courses saved by students for later |
+| `course_ratings` | Student reviews and 1–5 star ratings |
+| `assessment_questions` | MCQ bank for course-specific final assessments |
+| `assessment_attempts` | Results of student assessment attempts (score, passed/failed) |
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+---
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+## 🔒 Row Level Security (RLS)
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+- **Courses**: Publicly readable if `is_published`. Only owners (instructors) can CRUD.
+- **Assessments**: Questions viewable only by enrolled students or the instructor.
+- **Progress/Wishlist**: Strictly owned by the student (`auth.uid() = student_id`).
+- **Instructor View**: Special policies allow instructors to see enrollment and wishlist counts for their own courses to power the notification system.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+---
 
-```sh
-cd my-turborepo
-turbo login
-```
+## 🛠️ Tech Stack
 
-Without global `turbo`, use your package manager:
+- **Framework**: Next.js 16
+- **Styling**: Tailwind CSS v4 (Vanilla CSS variables)
+- **Database/Auth**: Supabase (PostgreSQL)
+- **UI Components**: Shared `@repo/ui` library (centralized via Turborepo)
+- **State**: Zustand (for progress and real-time notifications)
+- **Icons**: Lucide React
 
-```sh
-cd my-turborepo
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+---
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
+## 📜 Available Scripts
 
 ```sh
 npx turbo link
@@ -157,4 +159,3 @@ Learn more about the power of Turborepo:
 - [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
 - [Configuration Options](https://turborepo.dev/docs/reference/configuration)
 - [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
-

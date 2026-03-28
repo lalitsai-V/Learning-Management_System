@@ -1,0 +1,868 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { Button } from "@repo/ui";
+import { Badge } from "@repo/ui";
+import {
+  Plus,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Image as ImageIcon,
+  PlayCircle,
+  FileText,
+  Trophy,
+  Save,
+  Rocket,
+  ArrowRight,
+  Settings,
+  Layout,
+  Check,
+  Upload,
+  Link as LinkIcon,
+  ExternalLink,
+  HelpCircle,
+  CircleDot
+} from "lucide-react";
+import { cn } from "@repo/ui";
+import { toast } from "sonner";
+import { Progress } from "@repo/ui";
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
+
+const STEPS = [
+  { id: "01", name: "Course Info", icon: Layout },
+  { id: "02", name: "Curriculum", icon: FileText },
+  { id: "03", name: "Settings", icon: Settings },
+  { id: "04", name: "Assessment", icon: Trophy },
+];
+
+const CATEGORIES = ["Development", "Design", "Business", "Marketing", "Photography", "Music"];
+
+type LessonType = "video" | "article" | "assessment";
+
+interface Lesson {
+  id: string;
+  title: string;
+  type: LessonType;
+  content?: string;
+  fileName?: string;
+  fileSize?: string;
+  expanded?: boolean;
+}
+
+interface Module {
+  id: string;
+  title: string;
+  description: string;
+  lessons: Lesson[];
+  expanded: boolean;
+}
+
+interface AssessmentQuestion {
+  id: string;
+  question: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_option: 'a' | 'b' | 'c' | 'd';
+}
+
+export default function CreateCoursePage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("Development");
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const [resources, setResources] = useState<{ title: string; url: string }[]>([]);
+  const [questions, setQuestions] = useState<AssessmentQuestion[]>([]);
+
+  const addQuestion = () => {
+    setQuestions(prev => [...prev, {
+      id: `q${Date.now()}`,
+      question: '',
+      option_a: '',
+      option_b: '',
+      option_c: '',
+      option_d: '',
+      correct_option: 'a'
+    }]);
+  };
+
+  const updateQuestion = (id: string, field: string, value: string) => {
+    setQuestions(prev => prev.map(q => q.id === id ? { ...q, [field]: value } : q));
+  };
+
+  const removeQuestion = (id: string) => {
+    setQuestions(prev => prev.filter(q => q.id !== id));
+  };
+  const [modules, setModules] = useState<Module[]>([
+    {
+      id: "m1",
+      title: "Module 1: Introduction",
+      description: "Overview of the course and what we'll cover.",
+      lessons: [
+        { id: "l1", title: "Welcome to the Course", type: "video", fileName: "introduction_hd.mp4", fileSize: "24.5MB", expanded: false },
+      ],
+      expanded: true,
+    },
+  ]);
+
+
+  const addModule = () => {
+    setModules((prev) => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substr(2, 9),
+        title: `Module ${prev.length + 1}: New Module`,
+        description: "",
+        lessons: [],
+        expanded: true,
+      },
+    ]);
+  };
+
+  const addLesson = (moduleId: string, type: LessonType) => {
+    setModules((prev) =>
+      prev.map((m) =>
+        m.id === moduleId
+          ? {
+              ...m,
+              lessons: [
+                ...m.lessons,
+                { id: Math.random().toString(36).substr(2, 9), title: `New ${type} lesson`, type, expanded: true },
+              ],
+            }
+          : m
+      )
+    );
+  };
+  
+  async function handleThumbnailUpload(file: File) {
+    setThumbnailUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `thumbnails/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('course-media')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('course-media')
+        .getPublicUrl(filePath);
+
+      setThumbnailUrl(publicUrl);
+      toast.success("Thumbnail uploaded!");
+    } catch (err: any) {
+      toast.error("Thumbnail upload failed", { description: err.message });
+    } finally {
+      setThumbnailUploading(false);
+    }
+  }
+
+  async function handleVideoUpload(moduleId: string, lessonId: string, file: File) {
+    setSaving(true);
+    try {
+        const fileExt = file.name.split('.').pop();
+        const filePath = `temp-courses/lessons/${lessonId}-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from('course-media')
+            .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('course-media')
+            .getPublicUrl(filePath);
+
+        setModules(prev => prev.map(m => m.id === moduleId ? {
+            ...m,
+            lessons: m.lessons.map(l => l.id === lessonId ? { ...l, fileName: publicUrl } : l)
+        } : m));
+
+        toast.success("Video ready for publishing!");
+    } catch (err: any) {
+        toast.error("Upload failed", { description: err.message });
+    } finally {
+        setSaving(false);
+    }
+}
+
+
+  const saveCourseToDB = async (isPublished: boolean) => {
+    if (!title) {
+        toast.error("Title is required");
+        return;
+    }
+    
+    setSaving(true);
+    try {
+        const { data: { user }, error: authErr } = await supabase.auth.getUser();
+
+        if (authErr || !user) {
+            toast.error("You must be logged in to create a course. Please log in first.");
+            setSaving(false);
+            return;
+        }
+
+        let instructorId = user.id;
+
+        // Insert Course
+        const { data: course, error: courseErr } = await supabase
+            .from("courses")
+            .insert({
+                instructor_id: instructorId,
+                title,
+                description,
+                category,
+                is_published: isPublished,
+                thumbnail_url: thumbnailUrl || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=2070&auto=format&fit=crop"
+            })
+            .select()
+            .single();
+
+        if (courseErr) throw courseErr;
+
+        // Insert Modules & Lessons (Simplified for demo, iterating rather than bulk insert for easier ID matching)
+        for (let i = 0; i < modules.length; i++) {
+            const mod = modules[i];
+            if (!mod) continue;
+            const { data: insertedMod, error: modErr } = await supabase
+                .from("modules")
+                .insert({
+                    course_id: course.id,
+                    title: mod.title,
+                    order_index: i
+                })
+                .select()
+                .single();
+                
+            if (modErr) throw modErr;
+
+            const lessonsToInsert = mod.lessons.map((l, lIdx) => ({
+                module_id: insertedMod.id,
+                title: l.title,
+                type: l.type,
+                content: l.content,
+                media_url: l.fileName,
+                order_index: lIdx
+            }));
+
+            if (lessonsToInsert.length > 0) {
+                const { error: lessErr } = await supabase.from("lessons").insert(lessonsToInsert);
+                if (lessErr) throw lessErr;
+            }
+        }
+
+        // Insert Resources
+        const validResources = resources.filter(r => r.title.trim() && r.url.trim());
+        if (validResources.length > 0) {
+            const resourcesToInsert = validResources.map(r => ({
+                course_id: course.id,
+                title: r.title.trim(),
+                url: r.url.trim().startsWith('http') ? r.url.trim() : `https://${r.url.trim()}`
+            }));
+            const { error: resErr } = await supabase.from("course_resources").insert(resourcesToInsert);
+            if (resErr) throw resErr;
+        }
+
+        // Insert Assessment Questions
+        const validQuestions = questions.filter(q => q.question.trim() && q.option_a.trim() && q.option_b.trim() && q.option_c.trim() && q.option_d.trim());
+        if (validQuestions.length > 0) {
+            const questionsToInsert = validQuestions.map((q, idx) => ({
+                course_id: course.id,
+                question: q.question.trim(),
+                option_a: q.option_a.trim(),
+                option_b: q.option_b.trim(),
+                option_c: q.option_c.trim(),
+                option_d: q.option_d.trim(),
+                correct_option: q.correct_option,
+                order_index: idx
+            }));
+            const { error: qErr } = await supabase.from("assessment_questions").insert(questionsToInsert);
+            if (qErr) throw qErr;
+        }
+
+        toast.success(isPublished ? "Course published successfully! 🎉" : "Draft saved successfully", {
+            description: isPublished ? "Your course is now live on the Eduvora network." : "You can continue editing later.",
+            duration: 5000,
+        });
+        
+        // Redirect back to courses list
+        setTimeout(() => {
+            router.push("/courses");
+        }, 1500);
+
+    } catch (err: any) {
+        toast.error("Failed to save course", { description: err?.message || JSON.stringify(err) });
+    } finally {
+        setSaving(false);
+    }
+  };
+
+  const handlePublish = () => saveCourseToDB(true);
+  const handleSaveDraft = () => saveCourseToDB(false);
+
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-12 pb-20">
+      {/* Stepper Header */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-8 px-4">
+        {STEPS.map((step, idx) => (
+          <div key={step.id} className="flex items-center gap-4 group">
+            <div className={cn(
+              "h-14 w-14 rounded-2xl flex items-center justify-center font-bold text-lg transition-all duration-300",
+              currentStep === idx ? "bg-primary text-white shadow-lg shadow-primary/30" : 
+              currentStep > idx ? "bg-green-500 text-white" : "bg-white border-2 border-border text-muted-foreground"
+            )}>
+              {currentStep > idx ? <Check className="h-6 w-6" strokeWidth={3} /> : step.id}
+            </div>
+            <div className="flex flex-col">
+              <span className={cn(
+                "text-[10px] font-bold uppercase tracking-widest leading-none mb-1",
+                currentStep >= idx ? "text-primary" : "text-muted-foreground"
+              )}>
+                Step {idx + 1}
+              </span>
+              <span className={cn(
+                "text-[16px] font-bold tracking-tight",
+                currentStep >= idx ? "text-foreground" : "text-muted-foreground"
+              )}>
+                {step.name}
+              </span>
+            </div>
+            {idx < STEPS.length - 1 && (
+              <div className="hidden md:block w-12 h-[2px] bg-border mx-4" />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-[2.5rem] border-none shadow-premium p-10 md:p-14">
+        {currentStep === 0 && (
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="space-y-2">
+                <span className="text-[12px] font-bold text-primary uppercase tracking-[0.2em]">Course Foundation</span>
+                <h2 className="text-3xl font-bold tracking-tighter">Basic Information</h2>
+             </div>
+
+             <div className="space-y-8">
+                <div className="space-y-3">
+                  <label className="text-[13px] font-bold text-foreground uppercase tracking-wider">Thumbnail Image</label>
+                  <input
+                    ref={thumbnailInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleThumbnailUpload(file);
+                    }}
+                  />
+                  <div
+                    className="group relative aspect-video bg-[#F5F7FA] rounded-3xl border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all outline-none overflow-hidden"
+                    onClick={() => thumbnailInputRef.current?.click()}
+                  >
+                    {thumbnailUrl ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={thumbnailUrl} alt="Thumbnail preview" className="absolute inset-0 w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                          <Upload className="h-6 w-6 text-white" />
+                          <p className="text-[13px] font-bold text-white">Change thumbnail</p>
+                        </div>
+                      </>
+                    ) : thumbnailUploading ? (
+                      <>
+                        <div className="h-16 w-16 rounded-full bg-white flex items-center justify-center shadow-sm text-primary mb-4">
+                          <Upload className="h-6 w-6 animate-bounce" />
+                        </div>
+                        <p className="text-[14px] font-bold text-foreground">Uploading...</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="h-16 w-16 rounded-full bg-white flex items-center justify-center shadow-sm text-primary mb-4 group-hover:scale-110 transition-transform">
+                          <ImageIcon className="h-6 w-6" />
+                        </div>
+                        <p className="text-[14px] font-bold text-foreground">Click to upload thumbnail</p>
+                        <p className="text-[12px] text-muted-foreground mt-1">Recommended size: 1600 x 900 px · JPG, PNG, WebP</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[13px] font-bold text-foreground uppercase tracking-wider">Course Title</label>
+                  <input 
+                    type="text" 
+                    placeholder="Mastering Advanced UI Design"
+                    className="w-full h-14 bg-[#F5F7FA] border-none rounded-2xl px-6 text-[15px] font-semibold text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[13px] font-bold text-foreground uppercase tracking-wider">Category</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {CATEGORIES.map((cat) => (
+                      <button 
+                        key={cat}
+                        onClick={() => setCategory(cat)}
+                        className={cn(
+                          "h-12 rounded-xl text-[13px] font-bold transition-all border-2",
+                          category === cat ? "bg-primary/5 border-primary/40 text-primary shadow-sm" : "bg-white border-border/50 text-muted-foreground hover:border-border"
+                        )}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+             </div>
+          </div>
+        )}
+
+        {currentStep === 1 && (
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+             <div className="flex items-center justify-between">
+               <div className="space-y-2">
+                  <span className="text-[12px] font-bold text-primary uppercase tracking-[0.2em]">Learning Path</span>
+                  <h2 className="text-3xl font-bold tracking-tighter">Curriculum Builder</h2>
+               </div>
+               <Button onClick={addModule} className="bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl h-12 px-6 font-bold gap-2">
+                 <Plus className="h-4 w-4" /> Add Module
+               </Button>
+             </div>
+
+             <div className="space-y-6">
+                {modules.map((mod, idx) => (
+                   <div key={mod.id} className="bg-[#F5F7FA] rounded-[2rem] overflow-hidden">
+                      <div className="p-6 flex items-center justify-between gap-4 cursor-pointer">
+                         <div className="flex items-center gap-4 flex-1">
+                            <span className="h-10 w-10 rounded-xl bg-white flex items-center justify-center font-bold text-foreground shadow-sm">
+                              {idx + 1}
+                            </span>
+                            <input 
+                              type="text" 
+                              className="bg-transparent border-none text-[16px] font-bold text-foreground focus:ring-0 outline-none p-0 flex-1 hover:bg-white/50 rounded-md px-2 -ml-2 transition-all"
+                              value={mod.title}
+                              onChange={(e) => {
+                                const newTitle = e.target.value;
+                                setModules(prev => prev.map(p => p.id === mod.id ? { ...p, title: newTitle } : p));
+                              }} 
+                            />
+                            <textarea
+                              placeholder="Add a brief description for this module..."
+                              className="w-full bg-transparent border-none text-[13px] text-muted-foreground focus:ring-0 outline-none p-0 resize-none h-12 mt-2"
+                              value={mod.description}
+                              onChange={(e) => {
+                                const newDesc = e.target.value;
+                                setModules(prev => prev.map(p => p.id === mod.id ? { ...p, description: newDesc } : p))
+                              }}
+                            />
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
+                              onClick={(e) => { e.stopPropagation(); addLesson(mod.id, "video"); }}
+                              title="Add Video Lesson"
+                            >
+                               <PlayCircle className="h-4.5 w-4.5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 text-muted-foreground hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all"
+                              onClick={(e) => { e.stopPropagation(); addLesson(mod.id, "article"); }}
+                              title="Add Doc Lesson"
+                            >
+                               <FileText className="h-4.5 w-4.5" />
+                            </Button>
+                            <div className="w-px h-4 bg-border/50 mx-1" />
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-9 w-9 text-red-400 hover:bg-red-50 rounded-lg transition-all"
+                            >
+                               <Trash2 className="h-4 w-4" />
+                            </Button>
+                         </div>
+                      </div>
+
+                       <div className="px-6 pb-6 space-y-4">
+                          {mod.lessons.map((lesson) => (
+                             <div key={lesson.id} className="space-y-3">
+                                <div 
+                                  onClick={() => {
+                                    setModules(prev => prev.map(m => m.id === mod.id ? {
+                                      ...m,
+                                      lessons: m.lessons.map(l => l.id === lesson.id ? { ...l, expanded: !l.expanded } : l)
+                                    } : m));
+                                  }}
+                                  className={cn(
+                                    "flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border transition-all cursor-pointer group",
+                                    lesson.expanded ? "border-primary/30 ring-2 ring-primary/5" : "border-border/10 hover:border-primary/20"
+                                  )}
+                                >
+                                  <div className={cn(
+                                     "h-9 w-9 rounded-xl flex items-center justify-center transition-colors",
+                                     lesson.type === "video" ? "bg-primary/10 text-primary" : "bg-blue-100 text-blue-600"
+                                   )}>
+                                      {lesson.type === "video" ? <PlayCircle className="h-4.5 w-4.5" /> : <FileText className="h-4.5 w-4.5" />}
+                                   </div>
+                                   <div className="flex flex-col flex-1 gap-1">
+                                      <input 
+                                        className="text-[14px] font-bold text-foreground bg-transparent border-none outline-none p-0 focus:bg-slate-50 rounded-md transition-all"
+                                        value={lesson.title}
+                                        onClick={(e) => e.stopPropagation()}
+                                        onChange={(e) => {
+                                          const newTitle = e.target.value;
+                                          setModules(prev => prev.map(m => m.id === mod.id ? {
+                                            ...m,
+                                            lessons: m.lessons.map(l => l.id === lesson.id ? { ...l, title: newTitle } : l)
+                                          } : m));
+                                        }}
+                                      />
+                                      <div className="flex items-center gap-2">
+                                         <span className={cn(
+                                           "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
+                                           lesson.type === "video" ? "bg-primary/5 text-primary" : "bg-blue-50 text-blue-500"
+                                         )}>
+                                           {lesson.type === "video" ? "VIDEO CONTENT" : "DOCUMENTATION"}
+                                         </span>
+                                         {lesson.fileName && (
+                                            <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
+                                               <Check className="h-3 w-3 text-green-500" /> {lesson.fileName}
+                                            </span>
+                                         )}
+                                      </div>
+                                   </div>
+                                   <div className="flex items-center gap-3">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 text-muted-foreground hover:text-red-400 group-hover:opacity-100 transition-all"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setModules(prev => prev.map(m => m.id === mod.id ? {
+                                            ...m,
+                                            lessons: m.lessons.filter(l => l.id !== lesson.id)
+                                          } : m));
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                      {lesson.expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                   </div>
+                                </div>
+
+                                {lesson.expanded && (
+                                   <div className="mx-4 p-6 bg-white rounded-2xl border border-dashed border-border/60 animate-in fade-in slide-in-from-top-2 duration-300">
+                                      {lesson.type === "video" ? (
+                                         <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                               <h4 className="text-[12px] font-bold text-foreground uppercase tracking-widest">Video Resource</h4>
+                                               {lesson.fileName && <Badge variant="outline" className="text-[10px] h-5">{lesson.fileSize}</Badge>}
+                                            </div>
+                                             <div className="group relative h-40 bg-[#F5F7FA] rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all outline-none overflow-hidden">
+                                                {lesson.fileName ? (
+                                                   <div className="absolute inset-0 bg-black">
+                                                      <video 
+                                                         src={lesson.fileName} 
+                                                         className="w-full h-full object-contain"
+                                                         controls
+                                                      />
+                                                   </div>
+                                                ) : (
+                                                   <>
+                                                      <input 
+                                                         type="file" 
+                                                         accept="video/*"
+                                                         className="absolute inset-0 opacity-0 cursor-pointer" 
+                                                         onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) handleVideoUpload(mod.id, lesson.id, file);
+                                                         }} 
+                                                      />
+                                                      <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm text-primary mb-3 group-hover:scale-110 transition-transform">
+                                                         <Upload className="h-4 w-4" />
+                                                      </div>
+                                                      <p className="text-[13px] font-bold text-foreground">Click to upload video</p>
+                                                      <p className="text-[11px] text-muted-foreground mt-1 text-center px-4">Maximum size: 2GB. Supported formats: .mp4, .mov, .mkv</p>
+                                                   </>
+                                                )}
+                                             </div>
+                                         </div>
+                                      ) : (
+                                         <div className="space-y-4">
+                                            <h4 className="text-[12px] font-bold text-foreground uppercase tracking-widest">Article Content</h4>
+                                            <textarea 
+                                               placeholder="Write or paste your article content here..."
+                                               className="w-full h-48 bg-[#F5F7FA] border-none rounded-xl p-4 text-[14px] font-medium text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
+                                               value={lesson.content}
+                                               onChange={(e) => {
+                                                  const newContent = e.target.value;
+                                                  setModules(prev => prev.map(m => m.id === mod.id ? {
+                                                     ...m,
+                                                     lessons: m.lessons.map(l => l.id === lesson.id ? { ...l, content: newContent } : l)
+                                                  } : m));
+                                               }}
+                                            />
+                                         </div>
+                                      )}
+                                   </div>
+                                )}
+                             </div>
+                          ))}
+                       </div>
+                   </div>
+                ))}
+             </div>
+          </div>
+        )}
+
+        {currentStep === 2 && (
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-2">
+              <span className="text-[12px] font-bold text-primary uppercase tracking-[0.2em]">Course Resources</span>
+              <h2 className="text-3xl font-bold tracking-tighter">Settings &amp; Resources</h2>
+              <p className="text-[15px] text-muted-foreground font-medium">
+                Add helpful links for your students — documentation, tools, articles, or any external resource.
+              </p>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-3">
+              <label className="text-[13px] font-bold text-foreground uppercase tracking-wider">Course Description</label>
+              <textarea
+                placeholder="Describe what students will learn, prerequisites, and what makes this course unique..."
+                className="w-full h-36 bg-[#F5F7FA] border-none rounded-2xl px-6 py-4 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 transition-all outline-none resize-none"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            {/* Resources */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] font-bold text-foreground uppercase tracking-wider">Resource Links</label>
+                <button
+                  type="button"
+                  onClick={() => setResources(prev => [...prev, { title: "", url: "" }])}
+                  className="flex items-center gap-2 text-[13px] font-bold text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Plus className="h-4 w-4" /> Add Resource
+                </button>
+              </div>
+
+              {resources.length === 0 ? (
+                <div
+                  onClick={() => setResources([{ title: "", url: "" }])}
+                  className="flex flex-col items-center justify-center h-32 bg-[#F5F7FA] rounded-2xl border-2 border-dashed border-border cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all space-y-2"
+                >
+                  <LinkIcon className="h-6 w-6 text-muted-foreground" />
+                  <p className="text-[13px] font-bold text-muted-foreground">Click to add your first resource link</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {resources.map((res, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <LinkIcon className="h-4 w-4" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Resource title (e.g. Official Docs)"
+                        value={res.title}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setResources(prev => prev.map((r, i) => i === idx ? { ...r, title: val } : r));
+                        }}
+                        className="flex-1 h-12 bg-[#F5F7FA] border-none rounded-2xl px-4 text-[14px] font-semibold text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                      />
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={res.url}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setResources(prev => prev.map((r, i) => i === idx ? { ...r, url: val } : r));
+                        }}
+                        className="flex-1 h-12 bg-[#F5F7FA] border-none rounded-2xl px-4 text-[14px] font-semibold text-foreground placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                      />
+                      <button
+                        onClick={() => setResources(prev => prev.filter((_, i) => i !== idx))}
+                        className="h-10 w-10 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {currentStep === 3 && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-2">
+              <span className="text-[12px] font-bold text-primary uppercase tracking-[0.2em]">Course Assessment</span>
+              <h2 className="text-3xl font-bold tracking-tighter">Final Assessment</h2>
+              <p className="text-[15px] text-muted-foreground font-medium">
+                Create multiple-choice questions students must pass to complete your course. They need 70%+ to pass.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[13px] font-bold text-foreground uppercase tracking-wider">
+                  Questions ({questions.length})
+                </label>
+                <button
+                  type="button"
+                  onClick={addQuestion}
+                  className="flex items-center gap-2 text-[13px] font-bold text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Plus className="h-4 w-4" /> Add Question
+                </button>
+              </div>
+
+              {questions.length === 0 ? (
+                <div
+                  onClick={addQuestion}
+                  className="flex flex-col items-center justify-center h-40 bg-[#F5F7FA] rounded-2xl border-2 border-dashed border-border cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all space-y-3"
+                >
+                  <HelpCircle className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-[13px] font-bold text-muted-foreground">Click to add your first question</p>
+                  <p className="text-[12px] text-muted-foreground/60">Students will see these after completing all lessons</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {questions.map((q, qIdx) => (
+                    <div key={q.id} className="bg-[#F5F7FA] rounded-3xl p-6 space-y-5 relative">
+                      {/* Question number + delete */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-black text-[13px] shrink-0">
+                            {qIdx + 1}
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Enter your question..."
+                            value={q.question}
+                            onChange={(e) => updateQuestion(q.id, 'question', e.target.value)}
+                            className="flex-1 h-11 bg-white border-none rounded-xl px-4 text-[15px] font-semibold text-foreground placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-primary/20 outline-none"
+                          />
+                        </div>
+                        <button
+                          onClick={() => removeQuestion(q.id)}
+                          className="h-9 w-9 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      {/* 4 Options */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-11">
+                        {(['a', 'b', 'c', 'd'] as const).map((opt) => (
+                          <div key={opt} className={cn(
+                            "flex items-center gap-3 p-3 rounded-2xl border-2 transition-all cursor-pointer",
+                            q.correct_option === opt
+                              ? "border-primary bg-primary/5"
+                              : "border-transparent bg-white hover:border-border"
+                          )} onClick={() => updateQuestion(q.id, 'correct_option', opt)}>
+                            <div className={cn(
+                              "h-7 w-7 rounded-full flex items-center justify-center font-black text-[12px] shrink-0 uppercase transition-all",
+                              q.correct_option === opt
+                                ? "bg-primary text-white"
+                                : "bg-muted text-muted-foreground"
+                            )}>
+                              {opt}
+                            </div>
+                            <input
+                              type="text"
+                              placeholder={`Option ${opt.toUpperCase()}...`}
+                              value={q[`option_${opt}` as keyof AssessmentQuestion] as string}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                updateQuestion(q.id, `option_${opt}`, e.target.value);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex-1 bg-transparent border-none outline-none text-[14px] font-semibold text-foreground placeholder:text-muted-foreground/50 min-w-0"
+                            />
+                            {q.correct_option === opt && (
+                              <Check className="h-4 w-4 text-primary shrink-0" strokeWidth={3} />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="pl-11 text-[11px] font-bold text-muted-foreground/60 uppercase tracking-wider">
+                        Click an option to mark it as the correct answer
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-16 pt-10 border-t border-border/50 flex items-center justify-between">
+           <Button 
+             variant="ghost" 
+             onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+             className={cn("h-12 px-8 rounded-2xl font-bold text-muted-foreground", currentStep === 0 && "opacity-0 pointer-events-none")}
+           >
+             Previous Step
+           </Button>
+           
+           <div className="flex items-center gap-4">
+              <Button onClick={handleSaveDraft} disabled={saving} variant="outline" className="h-12 px-8 rounded-2xl border-2 border-border font-bold">
+                Save Draft
+              </Button>
+              {currentStep < 3 ? (
+                <Button 
+                  onClick={() => setCurrentStep(prev => prev + 1)}
+                  className="h-12 px-8 rounded-2xl bg-foreground text-white font-bold gap-2 hover:bg-zinc-800"
+                >
+                  Continue
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button 
+                  onClick={handlePublish}
+                  disabled={saving}
+                  className="h-12 px-10 rounded-2xl bg-primary text-white font-bold gap-2 shadow-lg shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  {saving ? <Upload className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                  {saving ? "Publishing..." : "Publish Course"}
+                </Button>
+              )}
+           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BookOpenIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+    </svg>
+  );
+}
