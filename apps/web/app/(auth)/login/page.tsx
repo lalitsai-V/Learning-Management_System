@@ -80,9 +80,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen hero-bg flex flex-col font-sans selection:bg-primary/20 overflow-y-auto">
       {/* Simple Navbar */}
-      <nav className="flex items-center justify-between px-6 lg:px-10 py-5 shrink-0">
+      <nav className="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-4 sm:py-5 shrink-0">
         <Link href="/" className="flex items-center gap-3.5 group transition-transform active:scale-[0.98]">
-          <div className="h-14 w-14 rounded-[1.25rem] bg-primary/5 flex items-center justify-center p-1.5 group-hover:bg-primary/10 transition-colors shadow-sm">
+          <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-[1.25rem] bg-primary/5 flex items-center justify-center p-1 group-hover:bg-primary/10 transition-colors shadow-sm">
             <img src="/logo.png" alt="Eduvora Logo" className="h-full w-full object-contain scale-125" />
           </div>
           <span className="font-bold text-2xl tracking-tight gradient-text">Eduvora</span>
@@ -92,19 +92,19 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-80px)]">
         <div className="w-full max-w-[480px] bg-background border border-border rounded-[2.5rem] shadow-2xl shadow-black/10 overflow-hidden relative">
           <Tabs defaultValue="login" className="flex flex-col w-full">
-            <div className="p-10 pb-4 text-center">
+            <div className="px-6 py-6 sm:p-10 pb-4 text-center">
               <h1 className="text-3xl font-black tracking-tight mb-2 text-foreground">Welcome to Eduvora</h1>
               <p className="text-muted-foreground text-sm">Empowering your journey through knowledge.</p>
             </div>
 
-            <div className="px-10 pb-4">
+            <div className="px-6 sm:px-10 pb-4">
               <TabsList className="grid w-full grid-cols-2 h-12 rounded-2xl bg-muted/50 p-1">
                 <TabsTrigger value="login" className="rounded-xl font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Sign In</TabsTrigger>
                 <TabsTrigger value="signup" className="rounded-xl font-bold data-[state=active]:bg-background data-[state=active]:shadow-sm">Sign Up</TabsTrigger>
               </TabsList>
             </div>
 
-            <div className="p-10 pt-4 space-y-6">
+            <div className="px-6 pt-4 sm:p-10 space-y-6">
               <TabsContent value="login" className="mt-0 space-y-5 animate-in fade-in duration-300">
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -202,7 +202,7 @@ export default function LoginPage() {
                   <div className="space-y-3 pt-2">
                     <Label className="font-bold ml-1">Join as a...</Label>
                     <RadioGroup 
-                      className="grid grid-cols-2 gap-4" 
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-4" 
                       value={role}
                       onValueChange={(val) => setRole(val as any)}
                     >
@@ -212,7 +212,7 @@ export default function LoginPage() {
                           htmlFor="student"
                           onClick={() => setRole("student")}
                           className={
-                            "flex flex-col items-center justify-between rounded-xl border-2 p-4 hover:bg-accent hover:text-accent-foreground transition-all cursor-pointer " +
+                            "flex flex-col items-center justify-between rounded-xl border-2 p-4 hover:bg-accent hover:text-accent-foreground transition-all cursor-pointer min-h-[84px] " +
                             (role === "student"
                               ? "border-primary bg-primary/5"
                               : "border-muted bg-popover/50")
@@ -228,7 +228,7 @@ export default function LoginPage() {
                           htmlFor="instructor"
                           onClick={() => setRole("instructor")}
                           className={
-                            "flex flex-col items-center justify-between rounded-xl border-2 p-4 hover:bg-accent hover:text-accent-foreground transition-all cursor-pointer " +
+                            "flex flex-col items-center justify-between rounded-xl border-2 p-4 hover:bg-accent hover:text-accent-foreground transition-all cursor-pointer min-h-[84px] " +
                             (role === "instructor"
                               ? "border-primary bg-primary/5"
                               : "border-muted bg-popover/50")
