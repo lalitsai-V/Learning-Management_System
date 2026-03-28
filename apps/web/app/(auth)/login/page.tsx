@@ -210,7 +210,13 @@ export default function LoginPage() {
                         <RadioGroupItem value="student" id="student" className="peer sr-only" />
                         <Label
                           htmlFor="student"
-                          className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover/50 p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 transition-all cursor-pointer"
+                          onClick={() => setRole("student")}
+                          className={
+                            "flex flex-col items-center justify-between rounded-xl border-2 p-4 hover:bg-accent hover:text-accent-foreground transition-all cursor-pointer " +
+                            (role === "student"
+                              ? "border-primary bg-primary/5"
+                              : "border-muted bg-popover/50")
+                          }
                         >
                           <GraduationCapIcon className="mb-2 h-6 w-6" />
                           <span className="text-xs font-bold uppercase tracking-wider">Student</span>
@@ -220,7 +226,13 @@ export default function LoginPage() {
                         <RadioGroupItem value="instructor" id="instructor" className="peer sr-only" />
                         <Label
                           htmlFor="instructor"
-                          className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover/50 p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 transition-all cursor-pointer"
+                          onClick={() => setRole("instructor")}
+                          className={
+                            "flex flex-col items-center justify-between rounded-xl border-2 p-4 hover:bg-accent hover:text-accent-foreground transition-all cursor-pointer " +
+                            (role === "instructor"
+                              ? "border-primary bg-primary/5"
+                              : "border-muted bg-popover/50")
+                          }
                         >
                           <User className="mb-2 h-6 w-6" />
                           <span className="text-xs font-bold uppercase tracking-wider">Instructor</span>
