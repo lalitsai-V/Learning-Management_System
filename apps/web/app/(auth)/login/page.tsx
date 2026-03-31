@@ -77,6 +77,15 @@ export default function LoginPage() {
     });
   };
 
+  const signInWithGithub = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "github",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+      },
+    });
+  };
+
   return (
     <div className="min-h-screen hero-bg flex flex-col font-sans selection:bg-primary/20 overflow-y-auto">
       {/* Simple Navbar */}
@@ -267,7 +276,7 @@ export default function LoginPage() {
                   <Chrome className="h-4 w-4 text-red-500" />
                   Google
                 </Button>
-                <Button variant="outline" className="h-12 rounded-2xl border-2 gap-2 font-bold hover:bg-muted/50 transition-all active:scale-[0.98]">
+                <Button variant="outline" onClick={signInWithGithub} className="h-12 rounded-2xl border-2 gap-2 font-bold hover:bg-muted/50 transition-all active:scale-[0.98]">
                   <Github className="h-4 w-4" />
                   GitHub
                 </Button>
