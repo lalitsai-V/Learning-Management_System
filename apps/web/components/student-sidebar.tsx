@@ -22,7 +22,7 @@ const mainNavItems = [
 ];
 
 const footerNavItems = [
-  { label: "Help Center", href: "/help", icon: HelpCircle },
+  { label: "Help Center", href: "mailto:lalitsai7832@gmail.com", icon: HelpCircle },
   { label: "Logout", href: "/", icon: LogOut },
 ];
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button, Badge, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@repo/ui";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ interface Course {
 }
 
 export default function InstructorCoursesPage() {
+  const router = useRouter();
   const supabase = createClient();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -234,15 +236,15 @@ export default function InstructorCoursesPage() {
                         <MoreVertical className="h-4 w-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44 shadow-lg rounded-xl border-zinc-100 p-1">
-                      <DropdownMenuItem className="p-0 rounded-lg overflow-hidden">
-                        <Link href={`/courses/${course.id}/analytics`} className="flex items-center gap-2 w-full h-full p-2.5">
+                      <DropdownMenuItem className="p-0 rounded-lg overflow-hidden cursor-pointer" onClick={() => router.push(`/courses/${course.id}/analytics`)}>
+                        <div className="flex items-center gap-2 w-full h-full p-2.5">
                           <BarChart2 className="h-4 w-4" /> Analytics
-                        </Link>
+                        </div>
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="p-0 rounded-lg overflow-hidden">
-                        <Link href={`/courses/${course.id}/students`} className="flex items-center gap-2 w-full h-full p-2.5">
+                      <DropdownMenuItem className="p-0 rounded-lg overflow-hidden cursor-pointer" onClick={() => router.push(`/courses/${course.id}/students`)}>
+                        <div className="flex items-center gap-2 w-full h-full p-2.5">
                           <Users className="h-4 w-4" /> Students
-                        </Link>
+                        </div>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="mx-1 my-1 bg-zinc-50" />
                       <DropdownMenuItem

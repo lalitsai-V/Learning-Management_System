@@ -86,9 +86,9 @@ export function Footer() {
           © 2026 Eduvora Learning Architecture. All rights reserved.
         </p>
         <div className="flex gap-8">
-          <Link href="#" className="text-slate-400 text-[10px] font-bold uppercase tracking-widest hover:text-indigo-600 transition-colors">
+          <a href="mailto:lalitsai783@gmail.com" className="text-slate-400 text-[10px] font-bold uppercase tracking-widest hover:text-indigo-600 transition-colors">
             Contact Support
-          </Link>
+          </a>
           <Link href="#" className="text-slate-400 text-[10px] font-bold uppercase tracking-widest hover:text-indigo-600 transition-colors">
             Help Center
           </Link>
