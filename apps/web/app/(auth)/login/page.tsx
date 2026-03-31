@@ -39,7 +39,7 @@ export default function LoginPage() {
         });
 
         if (error) throw error;
-        
+
         toast.success("Account created! Please check your email for verification.");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -50,7 +50,7 @@ export default function LoginPage() {
         if (error) throw error;
 
         toast.success("Welcome back!");
-        
+
         // Fetch profile to see where to redirect
         const { data: profile } = await supabase
           .from("profiles")
@@ -120,10 +120,10 @@ export default function LoginPage() {
                     <Label htmlFor="email" className="font-bold ml-1">Email Address</Label>
                     <div className="relative group">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="name@example.com" 
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="name@example.com"
                         className="pl-11 h-12 rounded-2xl bg-muted/5 border-border focus-visible:ring-2 focus-visible:ring-primary shadow-none"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -138,10 +138,10 @@ export default function LoginPage() {
                     </div>
                     <div className="relative group">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                      <Input 
-                        id="password" 
-                        type="password" 
-                        placeholder="••••••••" 
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
                         className="pl-11 h-12 rounded-2xl bg-muted/5 border-border focus-visible:ring-2 focus-visible:ring-primary shadow-none"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -150,8 +150,8 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <Button 
-                  onClick={() => handleAuth("login")} 
+                <Button
+                  onClick={() => handleAuth("login")}
                   disabled={loading}
                   className="w-full h-12 rounded-2xl bg-foreground text-background font-black hover:bg-zinc-800 transition-all active:scale-[0.98] gap-2"
                 >
@@ -167,10 +167,10 @@ export default function LoginPage() {
                     <Label htmlFor="name" className="font-bold ml-1">Full Name</Label>
                     <div className="relative group">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                      <Input 
-                        id="name" 
-                        type="text" 
-                        placeholder="John Doe" 
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="John Doe"
                         className="pl-11 h-12 rounded-2xl bg-muted/5 border-border focus-visible:ring-2 focus-visible:ring-primary shadow-none"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
@@ -182,10 +182,10 @@ export default function LoginPage() {
                     <Label htmlFor="email-up" className="font-bold ml-1">Email Address</Label>
                     <div className="relative group">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                      <Input 
-                        id="email-up" 
-                        type="email" 
-                        placeholder="name@example.com" 
+                      <Input
+                        id="email-up"
+                        type="email"
+                        placeholder="name@example.com"
                         className="pl-11 h-12 rounded-2xl bg-muted/5 border-border focus-visible:ring-2 focus-visible:ring-primary shadow-none"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -197,10 +197,10 @@ export default function LoginPage() {
                     <Label htmlFor="password-up" className="font-bold ml-1">Password</Label>
                     <div className="relative group">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                      <Input 
-                        id="password-up" 
-                        type="password" 
-                        placeholder="••••••••" 
+                      <Input
+                        id="password-up"
+                        type="password"
+                        placeholder="••••••••"
                         className="pl-11 h-12 rounded-2xl bg-muted/5 border-border focus-visible:ring-2 focus-visible:ring-primary shadow-none"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -210,8 +210,8 @@ export default function LoginPage() {
 
                   <div className="space-y-3 pt-2">
                     <Label className="font-bold ml-1">Join as a...</Label>
-                    <RadioGroup 
-                      className="grid grid-cols-1 sm:grid-cols-2 gap-4" 
+                    <RadioGroup
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                       value={role}
                       onValueChange={(val) => setRole(val as any)}
                     >
@@ -251,8 +251,8 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <Button 
-                  onClick={() => handleAuth("signup")} 
+                <Button
+                  onClick={() => handleAuth("signup")}
                   disabled={loading}
                   className="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black hover:bg-primary/90 transition-all active:scale-[0.98] gap-2 shadow-lg shadow-primary/20"
                 >
@@ -262,25 +262,6 @@ export default function LoginPage() {
                 </Button>
               </TabsContent>
 
-              <div className="relative py-2">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" onClick={signInWithGoogle} className="h-12 rounded-2xl border-2 gap-2 font-bold hover:bg-muted/50 transition-all active:scale-[0.98]">
-                  <Chrome className="h-4 w-4 text-red-500" />
-                  Google
-                </Button>
-                <Button variant="outline" onClick={signInWithGithub} className="h-12 rounded-2xl border-2 gap-2 font-bold hover:bg-muted/50 transition-all active:scale-[0.98]">
-                  <Github className="h-4 w-4" />
-                  GitHub
-                </Button>
-              </div>
 
               <p className="text-center text-[10px] text-muted-foreground px-6 leading-relaxed">
                 By continuing, you agree to Eduvora's <Link href="#" className="underline underline-offset-2">Terms of Service</Link> and <Link href="#" className="underline underline-offset-2">Privacy Policy</Link>.
