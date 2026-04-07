@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { GraduationCapIcon, Mail, Lock, User, ArrowRight, Loader2, Github, Chrome } from "lucide-react";
+import { GraduationCapIcon, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 import { Button, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger, RadioGroup, RadioGroupItem } from "@repo/ui";
@@ -16,6 +16,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"student" | "instructor">("student");
+
+  useEffect(() => {
+    async function checkUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setLoading(true);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        
+        const redirectPath = profile?.role === "instructor" ? "/instructor" : "/dashboard";
+        router.push(redirectPath);
+      }
+    }
+    checkUser();
+  }, [supabase, router]);
 
   const handleAuth = async (type: "login" | "signup") => {
     if (!email || !password) {
@@ -73,6 +91,9 @@ export default function LoginPage() {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        queryParams: {
+          prompt: 'select_account'
+        }
       },
     });
   };
@@ -82,6 +103,9 @@ export default function LoginPage() {
       provider: "github",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        queryParams: {
+          prompt: 'select_account'
+        }
       },
     });
   };

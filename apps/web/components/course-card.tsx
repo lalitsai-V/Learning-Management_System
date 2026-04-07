@@ -6,7 +6,6 @@ import {
   PlayCircle,
   BookOpen,
   XCircle,
-  Heart
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@repo/ui";
@@ -25,8 +24,7 @@ export interface CourseCardProps {
   modulesCount?: number;
   isLearning?: boolean;
   onUnenroll?: (id: string) => void;
-  isInWishlist?: boolean;
-  onWishlistToggle?: (id: string, e: React.MouseEvent) => void;
+  
 }
 
 export function CourseCard({
@@ -43,8 +41,7 @@ export function CourseCard({
   modulesCount = 0,
   isLearning: isLearningProp,
   onUnenroll,
-  isInWishlist = false,
-  onWishlistToggle
+  
 }: CourseCardProps) {
   const isLearning = isLearningProp ?? typeof progress === "number";
   const target = isLearning ? `/learn/${id}` : `/courses/${id}`;
@@ -63,19 +60,7 @@ export function CourseCard({
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute top-4 right-4 z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => onWishlistToggle?.(id, e)}
-            className={cn(
-              "h-9 w-9 rounded-xl bg-white/95 backdrop-blur-sm shadow-sm transition-all hover:scale-110",
-              isInWishlist ? "text-red-500 fill-red-500" : "text-muted-foreground hover:text-red-500"
-            )}
-          >
-            <Heart className={cn("h-5 w-5", isInWishlist && "fill-current")} />
-          </Button>
-        </div>
+        
       </Link>
 
       {/* Content */}

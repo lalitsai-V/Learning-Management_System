@@ -10,7 +10,6 @@ import { useUIStore } from "@/lib/store";
 export function CuratedSelections() {
   const supabase = createClient();
   const [courses, setCourses] = useState<any[]>([]);
-  const [wishlist, setWishlist] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { searchQuery } = useUIStore();
 
@@ -34,16 +33,7 @@ export function CuratedSelections() {
       if (error) throw error;
       setCourses(data || []);
 
-      if (user) {
-        const { data: wishlistData, error: wishlistError } = await supabase
-          .from("wishlist")
-          .select("course_id")
-          .eq("student_id", user.id);
-        
-        if (!wishlistError && wishlistData) {
-          setWishlist(wishlistData.map(item => item.course_id));
-        }
-      }
+      
     } catch (err: any) {
       console.warn("Could not fetch data:", err?.message || JSON.stringify(err));
     } finally {
@@ -55,40 +45,7 @@ export function CuratedSelections() {
     fetchCoursesAndWishlist();
   }, [fetchCoursesAndWishlist]);
 
-  const handleWishlistToggle = async (courseId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        alert("Please login to add to wishlist");
-        return;
-      }
-
-      const isItemInWishlist = wishlist.includes(courseId);
-
-      if (isItemInWishlist) {
-        const { error } = await supabase
-          .from('wishlist')
-          .delete()
-          .eq('student_id', user.id)
-          .eq('course_id', courseId);
-        
-        if (error) throw error;
-        setWishlist(prev => prev.filter(id => id !== courseId));
-      } else {
-        const { error } = await supabase
-          .from('wishlist')
-          .insert({ student_id: user.id, course_id: courseId });
-        
-        if (error) throw error;
-        setWishlist(prev => [...prev, courseId]);
-      }
-    } catch (error) {
-      console.error("Error toggling wishlist:", error);
-    }
-  };
+  
 
   const filteredCourses = courses.filter((course) => {
     if (!searchQuery) return true;
@@ -160,8 +117,7 @@ export function CuratedSelections() {
               students={(course.enrollments?.[0] as any)?.count || 0}
               modulesCount={(course.modules?.[0] as any)?.count || 0}
               thumbnail={course.thumbnail_url || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=2070&auto=format&fit=crop"}
-              isInWishlist={wishlist.includes(course.id)}
-              onWishlistToggle={handleWishlistToggle}
+              
             />
           ))}
         </div>

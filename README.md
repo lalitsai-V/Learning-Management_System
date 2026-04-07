@@ -1,161 +1,106 @@
-# Turborepo starter
+# Eduvora
 
-This Turborepo starter is maintained by the Turborepo core team.
+Eduvora (formerly Lumina) is a modern, comprehensive Learning Management System (LMS) designed for both students and instructors. It provides a robust platform for course creation, enrollment, progress tracking, and student assessments.
 
-## Using this example
+## 🚀 Features
 
-Run the following command:
+### For Instructors
+- **Course Management:** Create, edit, and publish comprehensive courses.
+- **Curriculum Builder:** Organize course content into modules and individual lessons (video, text, etc.).
+- **Assessments:** Create mandatory final assessments with multiple-choice questions to test student knowledge.
+- **Analytics:** Track student enrollments and monitor course performance.
 
-```sh
-npx create-turbo@latest
-```
+### For Students
+- **Learning Portal:** An intuitive, responsive interface for browsing and taking courses.
+- **Progress Tracking:** Seamlessly track lesson completions and overall course progress.
+- **Final Assessments:** Take course quizzes to complete the learning journey.
+- **Authentication:** Easy login and registration using GitHub OAuth or email/password.
 
-## What's inside?
+## 🛠️ Tech Stack
 
-This Turborepo includes the following packages/apps:
+- **Framework:** Next.js (App Router)
+- **Database & Auth:** Supabase (PostgreSQL, Authentication, Storage, Row Level Security)
+- **Styling:** Tailwind CSS & Vanilla CSS variables
+- **State Management:** Zustand
+- **Monorepo:** Turborepo
+- **UI Components:** Centralized `@repo/ui` component library
+- **Icons:** Lucide React
 
-### Apps and Packages
+## 📦 Getting Started
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### 1. Clone the repository
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
+```bash
 git clone <your-repo-url>
-cd mini_udemy
+cd EDUVORA-main
+```
+
+### 2. Install dependencies
+
+This project uses `pnpm` as the package manager.
+
+```bash
 pnpm install
 ```
 
-### 2. Configure Environment Variables
+### 3. Configure Environment Variables
 
-Create a `.env` file inside `apps/web/`:
+Create a `.env` file in the `apps/web/` directory based on the provided example.
 
-```sh
+```bash
 cp apps/web/.env.example apps/web/.env
 ```
 
-Fill in your Supabase credentials:
+Add your Supabase credentials:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
 ```
 
-### 3. Set Up the Database
+### 4. Database Setup
 
-1. Open your [Supabase Dashboard](https://supabase.com) → **SQL Editor**.
-2. Run the contents of [`supabase-schema.sql`](./supabase-schema.sql) first.
-3. Then run [`supabase-assessment.sql`](./supabase-assessment.sql) to enable the quiz system.
+To set up the database schema and enable necessary features:
 
-### 4. Run the Development Server
+1. Open the [Supabase Dashboard](https://supabase.com) and navigate to the **SQL Editor**.
+2. Run the provided SQL files in the project root to initialize the database:
+   - `supabase-schema.sql` (Core tables and RLS policies)
+   - `supabase-assessment.sql` (Assessment and quiz tables)
+   - `supabase-discussions.sql` (If applicable)
+   - `supabase-resources.sql` (If applicable)
+   - `fix-profiles-rls.sql`
+   - `migration-update-profiles.sql`
 
-```sh
+### 5. Run the Development Server
+
+Start the Turborepo development environment:
+
+```bash
 pnpm run dev
 ```
 
----
+The application will be available at `http://localhost:3000`.
 
-## 🗄️ Database Schema Overview
+## 🗄️ Database Architecture
 
-### Core Tables
+Eduvora uses Supabase with a schema designed for scale and secured by strict Row Level Security (RLS) policies.
 
-| Table | Description |
+| Core Tables | Description |
 |---|---|
-| `profiles` | User profiles (linked to `auth.users`) with `role` (student/instructor) |
-| `courses` | Main course metadata, thumbnails, and publishing status |
-| `modules` | Logical sections within a course |
-| `lessons` | Content (video, article, assessment) within modules |
-| `enrollments` | Student-Course relationship and overall progress tracking |
-| `lesson_progress`| Granular completion tracking for individual lessons |
+| `profiles` | User profiles with `role` differentiation (student/instructor) |
+| `courses` | Course metadata and publishing status |
+| `modules` | Logical sections outlining course structure |
+| `lessons` | Granular content within modules |
+| `enrollments` | Student-Course relationships |
+| `lesson_progress`| Completion state for specific lessons |
+| `assessment_questions` | Question bank for final assessments |
+| `assessment_attempts` | Records of student quiz attempts and scores |
 
-### Interaction & Assessment Tables
+## 🏗️ Repository Structure
 
-| Table | Description |
-|---|---|
-| `wishlist` | Stores courses saved by students for later |
-| `course_ratings` | Student reviews and 1–5 star ratings |
-| `assessment_questions` | MCQ bank for course-specific final assessments |
-| `assessment_attempts` | Results of student assessment attempts (score, passed/failed) |
+This is a monorepo built with Turborepo:
 
----
-
-## 🔒 Row Level Security (RLS)
-
-- **Courses**: Publicly readable if `is_published`. Only owners (instructors) can CRUD.
-- **Assessments**: Questions viewable only by enrolled students or the instructor.
-- **Progress/Wishlist**: Strictly owned by the student (`auth.uid() = student_id`).
-- **Instructor View**: Special policies allow instructors to see enrollment and wishlist counts for their own courses to power the notification system.
-
----
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 16
-- **Styling**: Tailwind CSS v4 (Vanilla CSS variables)
-- **Database/Auth**: Supabase (PostgreSQL)
-- **UI Components**: Shared `@repo/ui` library (centralized via Turborepo)
-- **State**: Zustand (for progress and real-time notifications)
-- **Icons**: Lucide React
-
----
-
-## 📜 Available Scripts
-
-```sh
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- **`apps/web`**: The main Next.js application containing both the Student Portal and Instructor Dashboard.
+- **`packages/ui`**: Shared React components used across the workspace.
+- **`packages/eslint-config`**: Shared ESLint configuration.
+- **`packages/typescript-config`**: Shared TypeScript configuration map.

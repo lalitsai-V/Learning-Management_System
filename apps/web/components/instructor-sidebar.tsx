@@ -3,22 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@repo/ui";
-import { 
-  LayoutGrid, 
-  Play, 
-  Settings, 
-  HelpCircle, 
+import {
+  LayoutGrid,
+  Play,
+  HelpCircle,
   LogOut,
-  Plus,
-  MessageSquare
+  Plus
 } from "lucide-react";
 import { Button } from "@repo/ui";
+import { logout } from "@/lib/auth";
 
 const mainNavItems = [
   { label: "Dashboard", href: "/instructor", icon: LayoutGrid },
   { label: "My Courses", href: "/courses", icon: Play },
-  { label: "Discussions", href: "/discussions", icon: MessageSquare },
-  { label: "Settings", href: "/instructor-settings", icon: Settings },
 ];
 
 const footerNavItems = [
@@ -44,7 +41,6 @@ export function InstructorSidebar() {
         </Link>
       </div>
 
-      {/* Main Navigation */}
       <nav className="flex-1 px-4 space-y-1">
         {mainNavItems.map((item) => {
           const isActive = pathname === item.href;
@@ -55,8 +51,8 @@ export function InstructorSidebar() {
               id={`instructor-nav-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
               className={cn(
                 "flex items-center gap-3.5 px-4 py-3 rounded-xl text-[14px] font-medium transition-all duration-200 group",
-                isActive 
-                  ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                isActive
+                  ? "bg-primary text-white shadow-lg shadow-primary/20"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
@@ -79,18 +75,20 @@ export function InstructorSidebar() {
 
       {/* Footer Navigation */}
       <div className="px-4 pb-8 space-y-1">
-        {footerNavItems.map((item) => (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3.5 px-4 py-3 rounded-xl text-[14px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
-            )}
-          >
-            <item.icon className="h-4.5 w-4.5 shrink-0" strokeWidth={2.5} />
-            <span>{item.label}</span>
-          </Link>
-        ))}
+        <Link
+          href="mailto:lalitsai783@gmail.com"
+          className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[14px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+        >
+          <HelpCircle className="h-4.5 w-4.5 shrink-0" strokeWidth={2.5} />
+          <span>Help Center</span>
+        </Link>
+        <button
+          onClick={() => logout()}
+          className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-[14px] font-medium text-red-500 hover:bg-red-50 transition-all duration-200 text-left"
+        >
+          <LogOut className="h-4.5 w-4.5 shrink-0" strokeWidth={2.5} />
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
   );

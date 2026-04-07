@@ -13,7 +13,6 @@ const CATEGORIES = ["all", "Development", "Design", "Business", "Marketing", "Ph
 export default function ExplorePage() {
   const { searchQuery, categoryFilter, setCategoryFilter } = useUIStore();
   const [courses, setCourses] = useState<any[]>([]);
-  const [wishlist, setWishlist] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -38,17 +37,7 @@ export default function ExplorePage() {
       if (coursesError) throw coursesError;
       setCourses(coursesData || []);
 
-      // Fetch wishlist if user is logged in
-      if (user) {
-        const { data: wishlistData, error: wishlistError } = await supabase
-          .from("wishlist")
-          .select("course_id")
-          .eq("student_id", user.id);
-        
-        if (!wishlistError && wishlistData) {
-          setWishlist(wishlistData.map(item => item.course_id));
-        }
-      }
+      
     } catch (err: any) {
       console.error("Error fetching data:", err.message);
     } finally {
@@ -60,40 +49,7 @@ export default function ExplorePage() {
     fetchCoursesAndWishlist();
   }, [fetchCoursesAndWishlist]);
 
-  const handleWishlistToggle = async (courseId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        alert("Please login to add to wishlist");
-        return;
-      }
-
-      const isItemInWishlist = wishlist.includes(courseId);
-
-      if (isItemInWishlist) {
-        const { error } = await supabase
-          .from('wishlist')
-          .delete()
-          .eq('student_id', user.id)
-          .eq('course_id', courseId);
-        
-        if (error) throw error;
-        setWishlist(prev => prev.filter(id => id !== courseId));
-      } else {
-        const { error } = await supabase
-          .from('wishlist')
-          .insert({ student_id: user.id, course_id: courseId });
-        
-        if (error) throw error;
-        setWishlist(prev => [...prev, courseId]);
-      }
-    } catch (error) {
-      console.error("Error toggling wishlist:", error);
-    }
-  };
+  
 
   const filtered = useMemo(() => {
     return courses.filter((c) => {
@@ -158,7 +114,6 @@ export default function ExplorePage() {
         </div>
       </div>
 
-      {/* Results Grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-12 animate-in fade-in duration-500">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -183,8 +138,7 @@ export default function ExplorePage() {
               students={(course.enrollments?.[0] as any)?.count || 0}
               modulesCount={(course.modules?.[0] as any)?.count || 0}
               thumbnail={course.thumbnail_url || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=2070&auto=format&fit=crop"}
-              isInWishlist={wishlist.includes(course.id)}
-              onWishlistToggle={handleWishlistToggle}
+              
             />
           ))}
         </div>
