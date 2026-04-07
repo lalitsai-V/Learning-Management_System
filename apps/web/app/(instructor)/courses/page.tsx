@@ -220,35 +220,13 @@ export default function InstructorCoursesPage() {
                     )}
                   </Button>
 
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-4 rounded-xl font-bold gap-2 border-border/60"
-                  >
-                    <Link href={`/courses/${course.id}/edit`}>
-                      <Pencil className="h-3.5 w-3.5" /> Edit
-                    </Link>
-                  </Button>
-
                   <DropdownMenu>
                     <DropdownMenuTrigger className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-zinc-100 transition-colors">
                         <MoreVertical className="h-4 w-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44 shadow-lg rounded-xl border-zinc-100 p-1">
-                      <DropdownMenuItem className="p-0 rounded-lg overflow-hidden cursor-pointer" onClick={() => router.push(`/courses/${course.id}/analytics`)}>
-                        <div className="flex items-center gap-2 w-full h-full p-2.5">
-                          <BarChart2 className="h-4 w-4" /> Analytics
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="p-0 rounded-lg overflow-hidden cursor-pointer" onClick={() => router.push(`/courses/${course.id}/students`)}>
-                        <div className="flex items-center gap-2 w-full h-full p-2.5">
-                          <Users className="h-4 w-4" /> Students
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="mx-1 my-1 bg-zinc-50" />
                       <DropdownMenuItem
-                        className="text-red-500 focus:text-red-600 focus:bg-red-50 flex items-center gap-2"
+                        className="text-red-500 focus:text-red-600 focus:bg-red-50 flex items-center gap-2 rounded-lg cursor-pointer"
                         disabled={deletingId === course.id}
                         onClick={() => deleteCourse(course.id, course.title)}
                       >

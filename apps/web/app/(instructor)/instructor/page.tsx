@@ -191,12 +191,6 @@ export default function InstructorDashboard() {
                   </div>
 
                   <div className="flex items-center gap-3 mt-8">
-                    <Button asChild className="flex-1 bg-[#F5F7FA] text-foreground hover:bg-primary hover:text-white border-none rounded-xl font-bold h-11 transition-all">
-                      <Link href={`/courses/${course.id}/edit`}>Edit Content</Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl bg-[#F5F7FA] text-muted-foreground">
-                      <BarChart2 className="h-5 w-5" />
-                    </Button>
                   </div>
                 </div>
               </div>
